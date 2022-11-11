@@ -48,6 +48,7 @@
 #include "pico/time.h"
 #include "hardware/gpio.h"
 #include "hardware/irq.h"
+#include "hardware/spi.h"
 #include "mipi_display.h"
 #include "picodoom.h"
 #include "image_decoder.h"
@@ -1067,13 +1068,20 @@ static void __not_in_flash_func(mipi_dma_completed)() {
 
 static void core1() {
     mipi_display_init();
-//    for (int y = SCREENHEIGHT; y < DISPLAY_HEIGHT; ++y) {
-//        mipi_display_write(0, y, SCREENWIDTH, 1, scanline_buffer);
-//    }
+    // clear screen
+    gpio_put(MIPI_DISPLAY_PIN_DC, 1);
+    gpio_put(MIPI_DISPLAY_PIN_CS, 0);
+    for (int i = 0; i < DISPLAY_WIDTH*DISPLAY_HEIGHT*2; ++i) { // 2 bytes per pixel
+        while (!spi_is_writable(MIPI_DISPLAY_SPI_PORT)) tight_loop_contents();
+        spi_get_hw(MIPI_DISPLAY_SPI_PORT)->dr = 0;
+    }
+    while (spi_get_hw(MIPI_DISPLAY_SPI_PORT)->sr & SPI_SSPSR_BSY_BITS) tight_loop_contents();
+    gpio_put(MIPI_DISPLAY_PIN_CS, 1);
+    // after one scanline is sent via DMA the IRQ will trigger next scanline
     mipi_display_set_dma_irq_handler(mipi_dma_completed);
     irq_set_exclusive_handler(LOW_PRIO_IRQ, fill_scanlines);
     irq_set_enabled(LOW_PRIO_IRQ, true);
-    irq_set_pending(LOW_PRIO_IRQ);
+    irq_set_pending(LOW_PRIO_IRQ); // trigger first scanline
     sem_release(&core1_launch);
     while (true) {
         pd_core1_loop();
