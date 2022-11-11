@@ -43,22 +43,38 @@
 #include "w_wad.h"
 #include "z_zone.h"
 
-#include "pico/scanvideo.h"
-#include "pico/scanvideo/composable_scanline.h"
 #include "pico/multicore.h"
 #include "pico/sync.h"
 #include "pico/time.h"
 #include "hardware/gpio.h"
+#include "hardware/irq.h"
+#include "mipi_display.h"
 #include "picodoom.h"
-#include "video_doom.pio.h"
 #include "image_decoder.h"
 #if PICO_ON_DEVICE
+#include "pico/binary_info.h"
 #include "hardware/dma.h"
 #include "hardware/structs/xip_ctrl.h"
 #endif
 
-#define YELLOW_SUBMARINE 0
-#define SUPPORT_TEXT 1
+bi_decl(bi_program_feature("MIPI display"))
+bi_decl(bi_2pins_with_names(MIPI_DISPLAY_PIN_BL, "MIPI BL", MIPI_DISPLAY_PIN_CS, "MIPI CS"))
+bi_decl(bi_3pins_with_names(MIPI_DISPLAY_PIN_CLK, "MIPI CLK", MIPI_DISPLAY_PIN_DC, "MIPI DC", MIPI_DISPLAY_PIN_MOSI, "MIPI MOSI"))
+
+static inline uint16_t
+rgb565(uint8_t r, uint8_t g, uint8_t b)
+{
+    uint16_t rgb;
+
+    rgb = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
+    rgb = (((rgb) << 8) & 0xFF00) | (((rgb) >> 8) & 0xFF);
+
+    return rgb;
+}
+
+#define FROM_RGB8(r, g, b) rgb565(r, g, b)
+
+#define SUPPORT_TEXT 0
 #if SUPPORT_TEXT
 typedef struct __packed {
     const char * const name;
@@ -70,22 +86,22 @@ typedef struct __packed {
 #include "fonts/normal.h"
 
 static uint16_t ega_colors[] = {
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0x00, 0x00, 0x00),         // 0: Black
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0x00, 0x00, 0xa8),         // 1: Blue
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0x00, 0xa8, 0x00),         // 2: Green
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0x00, 0xa8, 0xa8),         // 3: Cyan
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xa8, 0x00, 0x00),         // 4: Red
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xa8, 0x00, 0xa8),         // 5: Magenta
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xa8, 0x54, 0x00),         // 6: Brown
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xa8, 0xa8, 0xa8),         // 7: Grey
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0x54, 0x54, 0x54),         // 8: Dark grey
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0x54, 0x54, 0xfe),         // 9: Bright blue
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0x54, 0xfe, 0x54),         // 10: Bright green
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0x54, 0xfe, 0xfe),         // 11: Bright cyan
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xfe, 0x54, 0x54),         // 12: Bright red
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xfe, 0x54, 0xfe),         // 13: Bright magenta
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xfe, 0xfe, 0x54),         // 14: Yellow
-    PICO_SCANVIDEO_PIXEL_FROM_RGB8(0xfe, 0xfe, 0xfe),         // 15: Bright white
+    FROM_RGB8(0x00, 0x00, 0x00),         // 0: Black
+    FROM_RGB8(0x00, 0x00, 0xa8),         // 1: Blue
+    FROM_RGB8(0x00, 0xa8, 0x00),         // 2: Green
+    FROM_RGB8(0x00, 0xa8, 0xa8),         // 3: Cyan
+    FROM_RGB8(0xa8, 0x00, 0x00),         // 4: Red
+    FROM_RGB8(0xa8, 0x00, 0xa8),         // 5: Magenta
+    FROM_RGB8(0xa8, 0x54, 0x00),         // 6: Brown
+    FROM_RGB8(0xa8, 0xa8, 0xa8),         // 7: Grey
+    FROM_RGB8(0x54, 0x54, 0x54),         // 8: Dark grey
+    FROM_RGB8(0x54, 0x54, 0xfe),         // 9: Bright blue
+    FROM_RGB8(0x54, 0xfe, 0x54),         // 10: Bright green
+    FROM_RGB8(0x54, 0xfe, 0xfe),         // 11: Bright cyan
+    FROM_RGB8(0xfe, 0x54, 0x54),         // 12: Bright red
+    FROM_RGB8(0xfe, 0x54, 0xfe),         // 13: Bright magenta
+    FROM_RGB8(0xfe, 0xfe, 0x54),         // 14: Yellow
+    FROM_RGB8(0xfe, 0xfe, 0xfe),         // 15: Bright white
 };
 #endif
 
@@ -141,6 +157,7 @@ static uint32_t *text_scanline_buffer_start;
 static uint8_t *text_screen_cpy;
 static uint8_t *text_font_cpy;
 
+#if 0
 #if USE_1280x1024x60
 //static uint32_t missing_scanline_data[] = {
 //        video_doom_offset_raw_1p | (0 << 16u),
@@ -150,7 +167,7 @@ static uint8_t *text_font_cpy;
 static uint32_t missing_scanline_data[] =
         {
 #if YELLOW_SUBMARINE
-                video_doom_offset_color_run | (PICO_SCANVIDEO_PIXEL_FROM_RGB8(255,255,0) << 16u),
+                video_doom_offset_color_run | (FROM_RGB8(255,255,0) << 16u),
                 120 | (video_doom_offset_raw_1p << 16u),
 #endif
                 0u | (video_doom_offset_end_of_scanline_ALIGN << 16u)
@@ -241,7 +258,7 @@ const scanvideo_mode_t vga_mode_320x200_60 =
 
 #define VGA_MODE vga_mode_320x200_60
 #endif
-
+#endif
 #if USE_INTERP
 static interp_hw_save_t interp0_save, interp1_save;
 static boolean interp_updated;
@@ -335,7 +352,7 @@ uint8_t *next_video_scroll;
 uint8_t *video_scroll;
 #endif
 volatile uint8_t wipe_min;
-uint32_t *saved_scanline_buffer_ptrs[PICO_SCANVIDEO_SCANLINE_BUFFER_COUNT];
+//uint32_t *saved_scanline_buffer_ptrs[PICO_SCANVIDEO_SCANLINE_BUFFER_COUNT];
 
 #pragma GCC push_options
 #if PICO_ON_DEVICE
@@ -879,7 +896,7 @@ void __noinline new_frame_init_overlays_palette_and_wipe() {
                         g = gammatable[usegamma-1][g];
                         b = gammatable[usegamma-1][b];
                     }
-                    palette[i] = PICO_SCANVIDEO_PIXEL_FROM_RGB8(r, g, b);
+                    palette[i] = FROM_RGB8(r, g, b);
                 }
             } else {
                 int mul, r0, g0, b0;
@@ -901,7 +918,7 @@ void __noinline new_frame_init_overlays_palette_and_wipe() {
                     r += ((r0 - r) * mul) >> 16;
                     g += ((g0 - g) * mul) >> 16;
                     b += ((b0 - b) * mul) >> 16;
-                    palette[i] = PICO_SCANVIDEO_PIXEL_FROM_RGB8(r, g, b);
+                    palette[i] = FROM_RGB8(r, g, b);
                 }
             }
             next_pal = -1;
@@ -969,31 +986,25 @@ void __no_inline_not_in_flash_func(new_frame_stuff)() {
     }
 }
 
+static uint16_t scanline_buffer[SCREENWIDTH];
 void __scratch_x("scanlines") fill_scanlines() {
-#if SUPPORT_TEXT
-    struct scanvideo_scanline_buffer *buffer = scanvideo_begin_scanline_generation_linked(display_video_type == VIDEO_TYPE_TEXT ? 2 : 1, false);
-#else
-    struct scanvideo_scanline_buffer *buffer = scanvideo_begin_scanline_generation(false);
-#endif
 #if USE_INTERP
     need_save = interp_in_use;
     interp_updated = 0;
 #endif
 
-    while (buffer) {
-        static int8_t last_frame_number = -1;
-        int frame = scanvideo_frame_number(buffer->scanline_id);
-        int scanline = scanvideo_scanline_number(buffer->scanline_id);
-        if ((int8_t) frame != last_frame_number) {
-            last_frame_number = frame;
+    //while (buffer) {
+        static uint8_t frame = 1, last_frame = 0;
+        static uint8_t scanline = 0;
+        if ((int8_t) frame != last_frame) {
+            last_frame = frame;
             new_frame_stuff();
         }
 
-        DEBUG_PINS_SET(scanline_copy, 1);
         if (display_video_type != VIDEO_TYPE_TEXT) {
             // we don't have text mode -> normal transition yet, but we may for network game, so leaving this here - we would need to put the buffer pointers back
-            assert (buffer->data < text_scanline_buffer_start || buffer->data >= text_scanline_buffer_start + TEXT_SCANLINE_BUFFER_TOTAL_WORDS);
-            scanline_funcs[display_video_type](buffer->data+1, scanline);
+            //assert (buffer->data < text_scanline_buffer_start || buffer->data >= text_scanline_buffer_start + TEXT_SCANLINE_BUFFER_TOTAL_WORDS);
+            scanline_funcs[display_video_type](scanline_buffer, scanline);
             if (display_video_type >= FIRST_VIDEO_TYPE_WITH_OVERLAYS) {
                 assert(scanline < count_of(vpatchlists->vpatch_starters));
                 int prev = 0;
@@ -1015,7 +1026,7 @@ void __scratch_x("scanlines") fill_scanlines() {
                     patch_t *patch = resolve_vpatch_handle(overlays[vp].entry.patch_handle);
                     int yoff = scanline - overlays[vp].entry.y;
                     if (yoff < vpatch_height(patch)) {
-                        vpatchlists->vpatch_doff[vp] = draw_vpatch((uint16_t*)(buffer->data + 1), patch, &overlays[vp],
+                        vpatchlists->vpatch_doff[vp] = draw_vpatch((uint16_t*)(scanline_buffer), patch, &overlays[vp],
                                                                    vpatchlists->vpatch_doff[vp]);
                         prev = vp;
                     } else {
@@ -1023,34 +1034,18 @@ void __scratch_x("scanlines") fill_scanlines() {
                     }
                 }
             }
-            uint16_t *p = (uint16_t *) buffer->data;
-            p[0] = video_doom_offset_raw_run;
-            p[1] = p[2];
-            p[2] = SCREENWIDTH - 3;
-            buffer->data[SCREENWIDTH / 2 + 1] = video_doom_offset_raw_1p;
-            buffer->data[SCREENWIDTH / 2 + 2] = video_doom_offset_end_of_scanline_skip_ALIGN;
-            buffer->data_used = SCREENWIDTH / 2 + 3;
-            DEBUG_PINS_CLR(scanline_copy, 1);
         } else {
 #if SUPPORT_TEXT
             render_text_mode_scanline(buffer, scanline);
 #else
-            memset(buffer->data + 1, 0, SCREENWIDTH * 2);
-            p[0] = video_doom_offset_raw_run;
-            p[1] = p[2];
-            p[2] = SCREENWIDTH - 3;
-            buffer->data[SCREENWIDTH / 2 + 1] = video_doom_offset_raw_1p;
-            buffer->data[SCREENWIDTH / 2 + 2] = video_doom_offset_end_of_scanline_skip_ALIGN;
-            buffer->data_used = SCREENWIDTH / 2 + 3;
 #endif
         }
-        scanvideo_end_scanline_generation(buffer);
-#if SUPPORT_TEXT
-        buffer = scanvideo_begin_scanline_generation_linked(display_video_type == VIDEO_TYPE_TEXT ? 2 : 1, false);
-#else
-        buffer = scanvideo_begin_scanline_generation(false);
-#endif
+    mipi_display_write(0, (DISPLAY_HEIGHT+SCREENHEIGHT)/2 - scanline - 1, SCREENWIDTH, 1, scanline_buffer);
+    if (++scanline >= SCREENHEIGHT) {
+        scanline = 0;
+        ++frame;
     }
+    //}
 #if USE_INTERP
     if (interp_updated && need_save) {
         interp_restore_static(interp0, &interp0_save);
@@ -1062,41 +1057,27 @@ void __scratch_x("scanlines") fill_scanlines() {
 
 #if PICO_ON_DEVICE
 #define LOW_PRIO_IRQ 31
-#include "hardware/irq.h"
 
-static void __not_in_flash_func(free_buffer_callback)() {
+static void __not_in_flash_func(mipi_dma_completed)() {
 //    irq_set_pending(LOW_PRIO_IRQ);
     // ^ is in flash by default
     *((io_rw_32 *) (PPB_BASE + M0PLUS_NVIC_ISPR_OFFSET)) = 1u << LOW_PRIO_IRQ;
 }
 #endif
 
-//static semaphore_t init_sem;
 static void core1() {
-#if !PICO_ON_DEVICE
-    void simulate_video_pio_video_doom(const uint32_t *dma_data, uint32_t dma_data_size,
-                                       uint16_t *pixel_buffer, int32_t max_pixels, int32_t expected_width, bool overlay);
-    scanvideo_set_simulate_scanvideo_pio_fn(VIDEO_DOOM_PROGRAM_NAME, simulate_video_pio_video_doom);
-#endif
-    scanvideo_setup(&VGA_MODE);
-//    sem_release(&init_sem);
-#if PICO_ON_DEVICE
+    mipi_display_init();
+//    for (int y = SCREENHEIGHT; y < DISPLAY_HEIGHT; ++y) {
+//        mipi_display_write(0, y, SCREENWIDTH, 1, scanline_buffer);
+//    }
+    mipi_display_set_dma_irq_handler(mipi_dma_completed);
     irq_set_exclusive_handler(LOW_PRIO_IRQ, fill_scanlines);
     irq_set_enabled(LOW_PRIO_IRQ, true);
-    scanvideo_set_scanline_release_fn(free_buffer_callback);
-#endif
-    scanvideo_timing_enable(true);
-#if PICO_ON_DEVICE
     irq_set_pending(LOW_PRIO_IRQ);
-#endif
     sem_release(&core1_launch);
     while (true) {
         pd_core1_loop();
-#if PICO_ON_DEVICE
         tight_loop_contents();
-#else
-        fill_scanlines();
-#endif
     }
 }
 
@@ -1364,6 +1345,7 @@ void I_DisplayFPSDots(boolean dots_on)
 }
 
 #if PICO_ON_DEVICE
+/*
 bool video_doom_adapt_for_mode(const struct scanvideo_pio_program *program, const struct scanvideo_mode *mode,
                                struct scanvideo_scanline_buffer *missing_scanvideo_scanline_buffer, uint16_t *modifiable_instructions) {
     missing_scanvideo_scanline_buffer->data = missing_scanline_data;
@@ -1376,6 +1358,7 @@ pio_sm_config video_doom_configure_pio(pio_hw_t *pio, uint sm, uint offset) {
     scanvideo_default_configure_pio(pio, sm, offset, &config, false);
     return config;
 }
+*/
 #else
 void simulate_video_pio_video_doom(const uint32_t *dma_data, uint32_t dma_data_size,
                                    uint16_t *pixel_buffer, int32_t max_pixels, int32_t expected_width, bool overlay) {

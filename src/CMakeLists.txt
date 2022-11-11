@@ -342,7 +342,7 @@ target_compile_definitions(small_doom_common INTERFACE
         USE_LIGHTMAP_INDEXES=1 # saves about 9K
 
         #FRACBITS=15 # ha ha doesn't seem to be passed thru everywhere!
-        #NO_USE_ENDDOOM=1
+        NO_USE_ENDDOOM=1
         #NO_DRAW_VISPLANES=1
 
         USE_ERASE_FRAME=1 #
@@ -512,9 +512,9 @@ function(add_doom_tiny SUFFIX RENDER_LIB)
         NO_USE_NET=1 # standard networking
         USE_PICO_NET=1
         # for vgaboard
-        PICO_DEFAULT_I2C=1
-        PICO_DEFAULT_I2C_SDA_PIN=18
-        PICO_DEFAULT_I2C_SCL_PIN=19
+#        PICO_DEFAULT_I2C=1
+#        PICO_DEFAULT_I2C_SDA_PIN=18
+#        PICO_DEFAULT_I2C_SCL_PIN=19
 
         #NO_USE_LOAD=1
         #NO_USE_SAVE=1
@@ -611,20 +611,7 @@ target_compile_definitions(render_newhope INTERFACE
         PICODOOM_RENDER_NEWHOPE=1
         MERGE_DISTSCALE0_INTO_VIEWCOSSINANGLE=1
         NO_USE_ZLIGHT=1
-        PICO_SCANVIDEO_SCANLINE_BUFFER_COUNT=4
-        PICO_SCANVIDEO_LINKED_SCANLINE_BUFFERS=1
-        PICO_SCANVIDEO_SCANLINE_RELEASE_FUNCTION=1
         )
-if (PICO_ON_DEVICE)
-    target_compile_definitions(render_newhope INTERFACE
-            PICO_SCANVIDEO_MAX_SCANLINE_BUFFER_WORDS=164
-    )
-else()
-    # we cannot rewrite the buffers in host mode so we need them to be big enough for text mode
-    target_compile_definitions(render_newhope INTERFACE
-            PICO_SCANVIDEO_MAX_SCANLINE_BUFFER_WORDS=324
-    )
-endif()
 
 if (PICO_SDK)
     add_doom_tiny("" render_newhope)

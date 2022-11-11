@@ -30,7 +30,9 @@
 #include "pico/sem.h"
 #include "pico/multicore.h"
 #if PICO_ON_DEVICE
+#include "hardware/clocks.h"
 #include "hardware/vreg.h"
+#include "mipi_display.h"
 #endif
 #endif
 #if USE_PICO_NET
@@ -50,7 +52,7 @@ void D_DoomMain (void);
 
 #if PICO_ON_DEVICE
 #include "pico/binary_info.h"
-bi_decl(bi_3pins_with_names(PICO_AUDIO_I2S_DATA_PIN, "I2S DIN", PICO_AUDIO_I2S_CLOCK_PIN_BASE, "I2S BCK", PICO_AUDIO_I2S_CLOCK_PIN_BASE+1, "I2S LRCK"));
+bi_decl(bi_3pins_with_names(PICO_AUDIO_I2S_DATA_PIN, "I2S DIN", PICO_AUDIO_I2S_CLOCK_PIN_BASE, "I2S BCK", PICO_AUDIO_I2S_CLOCK_PIN_BASE+1, "I2S LRCK"))
 #endif
 
 int main(int argc, char **argv)
@@ -61,9 +63,16 @@ int main(int argc, char **argv)
     myargv = argv;
 #endif
 #if PICO_ON_DEVICE
-    vreg_set_voltage(VREG_VOLTAGE_1_30);
-    // todo pause? is this the cause of the cold start isue?
-    set_sys_clock_khz(270000, true);
+#define PLL 250000
+    vreg_set_voltage(VREG_VOLTAGE_1_10);
+    set_sys_clock_khz(PLL, true);
+    clock_configure(
+            clk_peri,
+            0,                                                // No glitchless mux
+            CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS, // System PLL on AUX mux
+            PLL*1000,                               // Input frequency
+            PLL*1000                                // Output (must be same as no divider)
+        );
 #if !USE_PICO_NET
     // debug ?
 //    gpio_debug_pins_init();

@@ -14,6 +14,10 @@ if (PICO_ON_DEVICE)
     target_sources(common_pico INTERFACE
             ${CMAKE_CURRENT_LIST_DIR}/blit.S
             ${CMAKE_CURRENT_LIST_DIR}/picoflash.c
+            ${CMAKE_CURRENT_LIST_DIR}/mipi/mipi_display.c
+            )
+    target_include_directories(common_pico INTERFACE
+            ${CMAKE_CURRENT_LIST_DIR}/mipi/include
             )
     pico_wrap_function(common_pico malloc)
     pico_wrap_function(common_pico calloc)
@@ -22,7 +26,7 @@ if (PICO_ON_DEVICE)
             PICO_HEAP_SIZE=0
             USE_ZONE_FOR_MALLOC=1
     )
-    target_link_libraries(common_pico INTERFACE  hardware_i2c)
+    target_link_libraries(common_pico INTERFACE hardware_i2c)
 endif()
 target_include_directories(common_pico INTERFACE
         ${CMAKE_CURRENT_LIST_DIR}
@@ -33,10 +37,12 @@ target_include_directories(common_pico INTERFACE
 target_compile_definitions(common_pico INTERFACE
         PICO_AUDIO_I2S_PIO=1
         PICO_AUDIO_I2S_DMA_IRQ=1
+        HAGL_HAL_DEBUG=1
+        HAGL_HAL_USE_DMA=1
+        MIPI_DISPLAY_ADDRESS_MODE=MIPI_DCS_ADDRESS_MODE_RGB|MIPI_DCS_ADDRESS_MODE_SWAP_XY|MIPI_DCS_ADDRESS_MODE_FLIP_Y
         )
 
-pico_generate_pio_header(common_pico ${CMAKE_CURRENT_LIST_DIR}/video_doom.pio)
-target_link_libraries(common_pico INTERFACE pico_stdlib pico_multicore pico_scanvideo_dpi)
+target_link_libraries(common_pico INTERFACE pico_stdlib pico_multicore hardware_spi hardware_dma)
 
 add_library(pico_cd INTERFACE)
 if (TARGET tinyusb_host)

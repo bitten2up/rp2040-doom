@@ -453,11 +453,11 @@ void handle_exit_key_down(int scancode, bool shift, uint8_t *kb_buffer, int kb_l
 uint8_t *exit_screen_kb_buffer_80;
 void __attribute((noreturn)) I_Quit (void)
 {
-    extern void D_Endoom();
+    //extern void D_Endoom();
 #if USE_PICO_NET
     piconet_stop();
 #endif
-    D_Endoom();
+    //D_Endoom();
     I_StopSong();
     while (!sem_available(&display_frame_freed)) {
         I_UpdateSound();
