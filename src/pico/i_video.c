@@ -1069,6 +1069,7 @@ static void __not_in_flash_func(mipi_dma_completed)() {
 static void core1() {
     mipi_display_init();
     // clear screen
+    // this relies on mipi_display_init() behavior to issue MIPI_DCS_WRITE_MEMORY_START command last
     gpio_put(MIPI_DISPLAY_PIN_DC, 1);
     gpio_put(MIPI_DISPLAY_PIN_CS, 0);
     for (int i = 0; i < DISPLAY_WIDTH*DISPLAY_HEIGHT*2; ++i) { // 2 bytes per pixel
@@ -1077,6 +1078,7 @@ static void core1() {
     }
     while (spi_get_hw(MIPI_DISPLAY_SPI_PORT)->sr & SPI_SSPSR_BSY_BITS) tight_loop_contents();
     gpio_put(MIPI_DISPLAY_PIN_CS, 1);
+
     // after one scanline is sent via DMA the IRQ will trigger next scanline
     mipi_display_set_dma_irq_handler(mipi_dma_completed);
     irq_set_exclusive_handler(LOW_PRIO_IRQ, fill_scanlines);
