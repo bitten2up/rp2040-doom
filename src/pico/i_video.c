@@ -997,7 +997,7 @@ void __scratch_x("scanlines") fill_scanlines() {
     //while (buffer) {
         static uint8_t frame = 1, last_frame = 0;
         static uint8_t scanline = 0;
-        if ((int8_t) frame != last_frame) {
+        if (frame != last_frame) {
             last_frame = frame;
             new_frame_stuff();
         }
