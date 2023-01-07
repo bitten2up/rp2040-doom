@@ -41,13 +41,19 @@ extern "C" {
 #include <stdint.h>
 #include <stddef.h>
 
+#include <hardware/irq.h>
+
 #include "hagl_hal.h"
 
 void mipi_display_init();
 size_t mipi_display_write(uint16_t x1, uint16_t y1, uint16_t w, uint16_t h, uint8_t *buffer);
-void mipi_display_set_dma_irq_handler();
+void mipi_display_set_dma_irq_handler(irq_handler_t handler);
 void mipi_display_ioctl(uint8_t command, uint8_t *data, size_t size);
 void mipi_display_close();
+
+void mipi_display_set_address(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
+void mipi_display_write_command(const uint8_t command);
+void mipi_display_write_data_dma(const uint8_t *buffer, size_t length);
 
 #ifdef __cplusplus
 }

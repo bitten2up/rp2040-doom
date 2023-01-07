@@ -45,7 +45,7 @@ SPDX-License-Identifier: MIT
 static uint dma_channel;
 static irq_handler_t dma_irq_handler;
 
-static void mipi_display_write_command(const uint8_t command)
+void mipi_display_write_command(const uint8_t command)
 {
     /* Set DC low to denote incoming command. */
     gpio_put(MIPI_DISPLAY_PIN_DC, 0);
@@ -79,7 +79,7 @@ static void mipi_display_write_data(const uint8_t *data, size_t length)
     gpio_put(MIPI_DISPLAY_PIN_CS, 1);
 }
 
-static void mipi_display_write_data_dma(const uint8_t *buffer, size_t length)
+void mipi_display_write_data_dma(const uint8_t *buffer, size_t length)
 {
     if (0 == length) {
         return;
@@ -101,6 +101,7 @@ static void mipi_display_dma_init()
     hagl_hal_debug("%s\n", "initialising DMA.");
 
     dma_channel = dma_claim_unused_channel(true);
+    hagl_hal_debug("DMA channel %d.\n", dma_channel);
     dma_channel_config channel_config = dma_channel_get_default_config(dma_channel);
     channel_config_set_transfer_data_size(&channel_config, DMA_SIZE_8);
     if (spi0 == MIPI_DISPLAY_SPI_PORT) {
@@ -132,8 +133,8 @@ static void mipi_display_read_data(uint8_t *data, size_t length)
     };
 }
 
-static void mipi_display_set_address(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
-    uint8_t command;
+void mipi_display_set_address(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
+{
     uint8_t data[4];
     static uint16_t prev_x1, prev_x2, prev_y1, prev_y2;
 
