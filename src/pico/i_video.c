@@ -50,6 +50,7 @@
 #include "hardware/irq.h"
 #include "hardware/spi.h"
 #include "mipi_display.h"
+#include "mipi_dcs.h"
 #include "picodoom.h"
 #include "image_decoder.h"
 #if PICO_ON_DEVICE
@@ -987,16 +988,51 @@ void __no_inline_not_in_flash_func(new_frame_stuff)() {
     }
 }
 
-static uint16_t scanline_buffer[SCREENWIDTH];
+static volatile uint8_t scanline_dma_inprogress = 0;
+
 void __scratch_x("scanlines") fill_scanlines() {
 #if USE_INTERP
     need_save = interp_in_use;
     interp_updated = 0;
 #endif
 
-    //while (buffer) {
-        static uint8_t frame = 1, last_frame = 0;
-        static uint8_t scanline = 0;
+    static uint16_t scanline_buffers[2][SCREENWIDTH];
+    static uint8_t scanline_ready = 0;
+    static uint8_t frame = 1, last_frame = 0;
+    static uint8_t scanline = 0;
+
+    while (1) {
+        // two scanlines in-progress
+        // one is DMA-ed, another is drawn in parallel
+        // this is not necessary a better player experience and 2x memory is used
+        if (scanline_ready > 0 && !scanline_dma_inprogress) {
+            const uint16_t* scanline_buffer = scanline_buffers[(scanline_ready-1)&1];
+            sleep_us(2); // else the screen can't keep up, perhaps SPI FIFO on Pico side
+            scanline_dma_inprogress = scanline_ready;
+            //uint8_t scanline_screen = (DISPLAY_HEIGHT+SCREENHEIGHT)/2 - (scanline_ready-1) - 1;
+            //mipi_display_write(0, scanline_screen, SCREENWIDTH, 1, (uint8_t*)scanline_buffer);
+
+            if (scanline_ready == 1) {
+                uint8_t off = (DISPLAY_HEIGHT-SCREENHEIGHT)/2; // center the picture
+                mipi_display_set_address(0, off, SCREENWIDTH-1, off+SCREENHEIGHT-1); // x1, y1, x2, y2
+                // the above sends MIPI_DCS_WRITE_MEMORY_START
+            } else {
+                mipi_display_write_command(MIPI_DCS_WRITE_MEMORY_CONTINUE);
+            }
+            mipi_display_write_data_dma(scanline_buffer, SCREENWIDTH*2);
+
+            scanline_ready = 0;
+        }
+
+        if (scanline_ready && scanline_dma_inprogress) break;
+
+        uint8_t scanline_buffer_requested = scanline&1;
+        if ((scanline_ready > 0 && scanline_buffer_requested == ((scanline_ready-1)&1)) ||
+                (scanline_dma_inprogress > 0 && scanline_buffer_requested == ((scanline_dma_inprogress-1)&1)))
+            break;
+
+        uint16_t* scanline_buffer = scanline_buffers[scanline_buffer_requested];
+
         if (frame != last_frame) {
             last_frame = frame;
             new_frame_stuff();
@@ -1027,7 +1063,7 @@ void __scratch_x("scanlines") fill_scanlines() {
                     patch_t *patch = resolve_vpatch_handle(overlays[vp].entry.patch_handle);
                     int yoff = scanline - overlays[vp].entry.y;
                     if (yoff < vpatch_height(patch)) {
-                        vpatchlists->vpatch_doff[vp] = draw_vpatch((uint16_t*)(scanline_buffer), patch, &overlays[vp],
+                        vpatchlists->vpatch_doff[vp] = draw_vpatch(scanline_buffer, patch, &overlays[vp],
                                                                    vpatchlists->vpatch_doff[vp]);
                         prev = vp;
                     } else {
@@ -1041,12 +1077,13 @@ void __scratch_x("scanlines") fill_scanlines() {
 #else
 #endif
         }
-    mipi_display_write(0, (DISPLAY_HEIGHT+SCREENHEIGHT)/2 - scanline - 1, SCREENWIDTH, 1, scanline_buffer);
-    if (++scanline >= SCREENHEIGHT) {
-        scanline = 0;
-        ++frame;
+
+        scanline_ready = scanline + 1;
+        if (++scanline >= SCREENHEIGHT) {
+            scanline = 0;
+            ++frame;
+        }
     }
-    //}
 #if USE_INTERP
     if (interp_updated && need_save) {
         interp_restore_static(interp0, &interp0_save);
@@ -1062,7 +1099,11 @@ void __scratch_x("scanlines") fill_scanlines() {
 static void __not_in_flash_func(mipi_dma_completed)() {
 //    irq_set_pending(LOW_PRIO_IRQ);
     // ^ is in flash by default
+    scanline_dma_inprogress = 0;
     *((io_rw_32 *) (PPB_BASE + M0PLUS_NVIC_ISPR_OFFSET)) = 1u << LOW_PRIO_IRQ;
+    // gpio_put(MIPI_DISPLAY_PIN_CS, 1);
+    // uint32_t mask = 1ul << MIPI_DISPLAY_PIN_CS;
+    // sio_hw->gpio_set = mask;
 }
 #endif
 
@@ -1081,11 +1122,12 @@ static void core1() {
 
     // after one scanline is sent via DMA the IRQ will trigger next scanline
     mipi_display_set_dma_irq_handler(mipi_dma_completed);
+    user_irq_claim(LOW_PRIO_IRQ);
     irq_set_exclusive_handler(LOW_PRIO_IRQ, fill_scanlines);
     irq_set_enabled(LOW_PRIO_IRQ, true);
-    irq_set_pending(LOW_PRIO_IRQ); // trigger first scanline
     sem_release(&core1_launch);
     while (true) {
+        irq_set_pending(LOW_PRIO_IRQ); // trigger first scanline
         pd_core1_loop();
         tight_loop_contents();
     }
