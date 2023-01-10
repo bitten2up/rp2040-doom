@@ -1007,7 +1007,8 @@ void __scratch_x("scanlines") fill_scanlines() {
         // this is not necessary a better player experience and 2x memory is used
         if (scanline_ready > 0 && !scanline_dma_inprogress) {
             const uint16_t* scanline_buffer = scanline_buffers[(scanline_ready-1)&1];
-            sleep_us(2); // else the screen can't keep up, perhaps SPI FIFO on Pico side
+            // wait for SPI TX FIFO to drain, else the screen can't keep up
+            while (spi_get_hw(MIPI_DISPLAY_SPI_PORT)->sr & SPI_SSPSR_BSY_BITS) tight_loop_contents();
             scanline_dma_inprogress = scanline_ready;
             //uint8_t scanline_screen = (DISPLAY_HEIGHT+SCREENHEIGHT)/2 - (scanline_ready-1) - 1;
             //mipi_display_write(0, scanline_screen, SCREENWIDTH, 1, (uint8_t*)scanline_buffer);
