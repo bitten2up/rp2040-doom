@@ -9,7 +9,7 @@ if (PICO_SDK_PATH)
     set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/src/pico/boards)
 endif()
 
-project("Chocolate Doom" VERSION 3.0.0 LANGUAGES C CXX)
+project("RP2040 Doom" VERSION 3.0.0 LANGUAGES C CXX)
 enable_language(CXX)
 set(CMAKE_CXX_STANDARD 14)
 
