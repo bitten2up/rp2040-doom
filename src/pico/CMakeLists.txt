@@ -39,7 +39,6 @@ target_compile_definitions(common_pico INTERFACE
         PICO_AUDIO_I2S_DMA_IRQ=1
         HAGL_HAL_DEBUG=1
         HAGL_HAL_USE_DMA=1
-        MIPI_DISPLAY_ADDRESS_MODE=MIPI_DCS_ADDRESS_MODE_RGB|MIPI_DCS_ADDRESS_MODE_SWAP_XY|MIPI_DCS_ADDRESS_MODE_MIRROR_X
         )
 
 target_link_libraries(common_pico INTERFACE pico_stdlib pico_multicore hardware_spi hardware_dma)
