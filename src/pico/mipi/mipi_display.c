@@ -34,6 +34,7 @@ SPDX-License-Identifier: MIT
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <pico/time.h>
 #include <hardware/spi.h>
 #include <hardware/dma.h>
 #include <hardware/gpio.h>
@@ -98,7 +99,7 @@ void mipi_display_write_data_dma(const uint8_t *buffer, size_t length)
 
 static void mipi_display_dma_init()
 {
-    hagl_hal_debug("%s\n", "initialising DMA.");
+    hagl_hal_debug("%s\n", "Initialising DMA.");
 
     dma_channel = dma_claim_unused_channel(true);
     hagl_hal_debug("DMA channel %d.\n", dma_channel);
@@ -120,6 +121,8 @@ static void __not_in_flash_func(dma_channel_irq_handler)()
 }
 
 void mipi_display_set_dma_irq_handler(irq_handler_t handler) {
+    hagl_hal_debug("%s\n", "Initialising IRQ.");
+
     dma_irq_handler = handler;
     dma_channel_set_irq0_enabled(dma_channel, true);
     irq_set_exclusive_handler(DMA_IRQ_0, dma_channel_irq_handler);
@@ -204,12 +207,20 @@ static void mipi_display_spi_master_init()
 
 void mipi_display_init()
 {
+    /* Power on the display */
+    if (MIPI_DISPLAY_PIN_PWR >= 0) {
+        gpio_set_function(MIPI_DISPLAY_PIN_PWR, GPIO_FUNC_SIO);
+        gpio_set_dir(MIPI_DISPLAY_PIN_PWR, GPIO_OUT);
+        hagl_hal_debug("%s\n", "Powering the display on.");
+        gpio_put(MIPI_DISPLAY_PIN_PWR, 1);
+    }
+
     /* Init the spi driver. */
     mipi_display_spi_master_init();
     sleep_ms(100);
 
     /* Reset the display. */
-    if (MIPI_DISPLAY_PIN_RST > 0) {
+    if (MIPI_DISPLAY_PIN_RST >= 0) {
         gpio_set_function(MIPI_DISPLAY_PIN_RST, GPIO_FUNC_SIO);
         gpio_set_dir(MIPI_DISPLAY_PIN_RST, GPIO_OUT);
 
@@ -243,10 +254,10 @@ void mipi_display_init()
     sleep_ms(200);
 
     /* Enable backlight */
-    if (MIPI_DISPLAY_PIN_BL > 0) {
+    if (MIPI_DISPLAY_PIN_BL >= 0) {
         gpio_set_function(MIPI_DISPLAY_PIN_BL, GPIO_FUNC_SIO);
         gpio_set_dir(MIPI_DISPLAY_PIN_BL, GPIO_OUT);
-
+        hagl_hal_debug("%s\n", "Setting up backlight.");
         gpio_put(MIPI_DISPLAY_PIN_BL, 1);
     }
 
