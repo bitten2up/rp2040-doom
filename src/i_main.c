@@ -63,8 +63,9 @@ int main(int argc, char **argv)
     myargv = argv;
 #endif
 #if PICO_ON_DEVICE
-#define PLL 250000
     vreg_set_voltage(VREG_VOLTAGE_1_10);
+    sleep_ms(10);
+#define PLL (MIPI_DISPLAY_SPI_CLOCK_SPEED_HZ/1000 * 4) // assume 60-70MHz
     set_sys_clock_khz(PLL, true);
     clock_configure(
             clk_peri,
