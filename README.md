@@ -6,6 +6,7 @@ Generic USB mouse and limited multi-axis controller support, specifically target
 Instead of VGA `rp2040-mipi` branch sends video output to SPI ST7789-based MIPI LCD.
 
 [![RP2040 Doom on a Raspberry Pi Pico](https://img.youtube.com/vi/li_t2avaNsM/hqdefault.jpg)](https://youtu.be/li_t2avaNsM)
+[![RP2040 Doom on a LilyGo T-Display RP2040](https://img.youtube.com/vi/RwXkYqCpmiQ/hqdefault.jpg)](https://youtube.com/shorts/RwXkYqCpmiQ)
 
 Significant changes have been made to support running on the RP2040 device, but particularly to support running the
 entire shareware `DOOM1.WAD` which is 4M big on a Raspberry Pi Pico with only 2M flash!
