@@ -60,9 +60,14 @@
 #endif
 
 bi_decl(bi_program_feature("MIPI display"))
-bi_decl(bi_2pins_with_names(MIPI_DISPLAY_PIN_PWR, "MIPI PWR", MIPI_DISPLAY_PIN_RST, "MIPI RST"))
 bi_decl(bi_2pins_with_names(MIPI_DISPLAY_PIN_BL, "MIPI BL", MIPI_DISPLAY_PIN_CS, "MIPI CS"))
 bi_decl(bi_3pins_with_names(MIPI_DISPLAY_PIN_CLK, "MIPI CLK", MIPI_DISPLAY_PIN_DC, "MIPI DC", MIPI_DISPLAY_PIN_MOSI, "MIPI MOSI"))
+#if MIPI_DISPLAY_PIN_PWR >= 0
+    bi_decl(bi_1pin_with_name(MIPI_DISPLAY_PIN_PWR, "MIPI PWR"))
+#endif
+#if MIPI_DISPLAY_PIN_RST >= 0
+    bi_decl(bi_1pin_with_name(MIPI_DISPLAY_PIN_RST, "MIPI RST"))
+#endif
 
 static inline uint16_t
 rgb565(uint8_t r, uint8_t g, uint8_t b)
