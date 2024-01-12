@@ -996,7 +996,9 @@ void __no_inline_not_in_flash_func(new_frame_stuff)() {
 
 static volatile uint8_t scanline_dma_inprogress = 0;
 
-void __scratch_x("scanlines") fill_scanlines() {
+// with GCC 12 doesn't fit into the scratch_x either
+// __scratch_x("scanlines")
+void __not_in_flash_func(fill_scanlines)() {
 #if USE_INTERP
     need_save = interp_in_use;
     interp_updated = 0;
