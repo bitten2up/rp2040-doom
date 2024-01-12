@@ -625,7 +625,7 @@ if (PICO_SDK)
             NO_USE_FINALE_BUNNY=1
     )
     target_compile_definitions(doom_tiny PRIVATE
-            TINY_WAD_ADDR=0x10040000
+            TINY_WAD_ADDR=0x10060000
     )
     target_link_libraries(doom_tiny PRIVATE tiny_settings)
 
@@ -640,7 +640,7 @@ if (PICO_SDK)
         target_link_libraries(doom_tiny_usb PRIVATE tiny_settings pico_cd)
         target_compile_definitions(doom_tiny_usb PRIVATE
                 USB_SUPPORT=1
-                TINY_WAD_ADDR=0x10044000 # ugh tinyusb is >8K currently!!
+                TINY_WAD_ADDR=0x10060000 # ugh tinyusb is >8K currently!!
         )
 
         add_doom_tiny(_nost_usb render_newhope)
