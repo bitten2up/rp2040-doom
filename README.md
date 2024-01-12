@@ -3,7 +3,7 @@
 This is a fork of a port of Doom for RP2040 devices, derived from [Chocolate Doom](https://github.com/chocolate-doom/chocolate-doom).
 Generic USB mouse and limited multi-axis controller support, specifically targeting SandioTech 3D Game O2 [mouse joysticks](https://github.com/arkadijs/sandioblast).
 
-Instead of VGA `rp2040-mipi` branch sends video output to SPI ST7789-based MIPI LCD.
+Instead of VGA the `rp2040-mipi` branch sends video output to SPI ST7789-based MIPI LCD.
 
 [![RP2040 Doom on a Raspberry Pi Pico](https://img.youtube.com/vi/li_t2avaNsM/hqdefault.jpg)](https://youtu.be/li_t2avaNsM)
 [![RP2040 Doom on a LilyGo T-Display RP2040](https://img.youtube.com/vi/RwXkYqCpmiQ/hqdefault.jpg)](https://youtube.com/shorts/RwXkYqCpmiQ)
@@ -116,12 +116,10 @@ You can create a build directly like this:
 ```bash
 mkdir rp2040-build
 cd rp2040-build
-cmake -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=vgaboard -DPICO_SDK_PATH=/path/to/pico-sdk -DPICO_EXTRAS_PATH=/path/to/pico-extras ..
+cmake -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=pimoroni_display_2_audio_pack -DPICO_SDK_PATH=/path/to/pico-sdk -DPICO_EXTRAS_PATH=/path/to/pico-extras ..
 ```
 
-Note that the `PICO_BOARD` setting is for the standard VGA demo board which has RGB on pins 0->15, sync pins on 16,17
-and
-I2S on 26,27,28.
+Look into `src/pico/boards` for board definitions.
 
 As before, use `make` or `make <target>` to build.
 
