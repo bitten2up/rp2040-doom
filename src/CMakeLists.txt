@@ -511,7 +511,7 @@ function(add_doom_tiny SUFFIX RENDER_LIB)
 
         NO_USE_UART=1
         NO_USE_NET=1 # standard networking
-        USE_PICO_NET=1
+        USE_PICO_NET=0
         # for vgaboard
 #        PICO_DEFAULT_I2C=1
 #        PICO_DEFAULT_I2C_SDA_PIN=18

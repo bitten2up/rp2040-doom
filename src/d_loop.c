@@ -697,6 +697,7 @@ void TryRunTics(void) {
 #if !DOOM_TINY
             memcpy(local_playeringame, set->ingame, sizeof(local_playeringame));
 #else
+#if USE_PICO_NET
             int lplayer_count = 0;
             for(int j=0;j<NET_MAXPLAYERS;j++) {
                 local_playeringame[j] = set->cmds[j].ingame;
@@ -706,6 +707,7 @@ void TryRunTics(void) {
                 net_client_connected = false;
                 piconet_stop();
             }
+#endif
 #endif
 
 //#define DUMP_TICS PICO_BUILD

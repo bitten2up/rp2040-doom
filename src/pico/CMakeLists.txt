@@ -1,9 +1,10 @@
 add_library(common_pico INTERFACE)
+
 target_sources(common_pico INTERFACE
         ${CMAKE_CURRENT_LIST_DIR}/i_glob.c
         ${CMAKE_CURRENT_LIST_DIR}/i_input.c
         ${CMAKE_CURRENT_LIST_DIR}/i_system.c
-        ${CMAKE_CURRENT_LIST_DIR}/piconet.c
+        #${CMAKE_CURRENT_LIST_DIR}/piconet.c
         ${CMAKE_CURRENT_LIST_DIR}/i_timer.c
         ${CMAKE_CURRENT_LIST_DIR}/i_video.c
         ${CMAKE_CURRENT_LIST_DIR}/stubs.c
@@ -41,7 +42,7 @@ target_compile_definitions(common_pico INTERFACE
         HAGL_HAL_USE_DMA=1
         )
 
-target_link_libraries(common_pico INTERFACE pico_stdlib pico_multicore hardware_spi hardware_dma)
+target_link_libraries(common_pico INTERFACE pico_stdlib pico_multicore hardware_pio hardware_spi hardware_dma)
 
 add_library(pico_cd INTERFACE)
 if (TARGET tinyusb_host)

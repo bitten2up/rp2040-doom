@@ -1204,9 +1204,11 @@ void M_DrawOptions(void)
 		      W_CacheLumpName(DEH_String(detailNames[detailLevel]),
 			              PU_CACHE));
 #else
+#if USE_PICO_NET
     // "Game" for Network
     V_DrawPatchDirect(OptionsDef.x + 105, OptionsDef.y + LINEHEIGHT * networkgame,
                       VPATCH_HANDLE(VPATCH_NAME(M_GAME)));
+#endif
 
 #endif
 

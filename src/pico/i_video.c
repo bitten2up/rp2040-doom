@@ -47,6 +47,7 @@
 #include "pico/sync.h"
 #include "pico/time.h"
 #include "hardware/gpio.h"
+#include "hardware/pio.h"
 #include "hardware/irq.h"
 #include "hardware/spi.h"
 #include "mipi_display.h"
