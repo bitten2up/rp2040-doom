@@ -1993,18 +1993,6 @@ void D_DoomMain (void)
     }
 #endif
 
-    {
-        if (gamemode == commercial)
-            startmap = 1;
-        else
-        {
-            startepisode = 1;
-            startmap = 1;
-        }
-        autostart = true;
-    }
-
-
 #if !NO_USE_ARGS
     // Undocumented:
     // Invoked by setup to test the controls.
