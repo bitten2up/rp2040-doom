@@ -83,6 +83,29 @@ int main(int argc, char **argv)
     gpio_set_dir(PICO_SMPS_MODE_PIN, GPIO_OUT);
     gpio_put(PICO_SMPS_MODE_PIN, 1);
 #endif
+    gpio_init(DOOM_GPIO_UP);
+    gpio_set_dir(DOOM_GPIO_UP, GPIO_IN);
+
+    gpio_init(DOOM_GPIO_DOWN);
+    gpio_set_dir(DOOM_GPIO_DOWN, GPIO_IN);
+
+    gpio_init(DOOM_GPIO_LEFT);
+    gpio_set_dir(DOOM_GPIO_LEFT, GPIO_IN);
+
+    gpio_init(DOOM_GPIO_RIGHT);
+    gpio_set_dir(DOOM_GPIO_RIGHT, GPIO_IN);
+
+    gpio_init(DOOM_GPIO_A);
+    gpio_set_dir(DOOM_GPIO_A, GPIO_IN);
+
+    gpio_init(DOOM_GPIO_B);
+    gpio_set_dir(DOOM_GPIO_B, GPIO_IN);
+
+    gpio_init(DOOM_GPIO_X);
+    gpio_set_dir(DOOM_GPIO_X, GPIO_IN);
+
+    gpio_init(DOOM_GPIO_Y);
+    gpio_set_dir(DOOM_GPIO_RIGHT, GPIO_IN);
 #endif
 #if LIB_PICO_STDIO
     stdio_init_all();

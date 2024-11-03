@@ -35,6 +35,9 @@
 #include "m_controls.h"
 #include "hardware/uart.h"
 #include <stdlib.h>
+#if LIB_PICO_STDLIB
+#include "hardware/gpio.h"
+#endif
 #if USB_SUPPORT
 #include "pico/binary_info.h"
 #include "tusb.h"
@@ -122,7 +125,14 @@ int mouse_threshold = 5;
 #endif
 
 enum {
+    SDL_SCANCODE_O = 18,
+    SDL_SCANCODE_P = 19,
+    SDL_SCANCODE_RETURN = 40,
     SDL_SCANCODE_SPACE = 44,
+    SDL_SCANCODE_RIGHT = 79,
+    SDL_SCANCODE_LEFT = 80,
+    SDL_SCANCODE_DOWN = 81,
+    SDL_SCANCODE_UP = 82,
     SDL_SCANCODE_LCTRL = 224,
     SDL_SCANCODE_LSHIFT = 225,
     SDL_SCANCODE_LALT = 226, /**< alt, option */
@@ -380,6 +390,109 @@ void I_GetEvent() {
 }
 
 void I_GetEventTimeout(int key_timeout) {
+#ifdef PIMORONI_PICOSYSTEM
+    if (!gpio_get(DOOM_GPIO_UP))
+    {
+        pico_key_down(SDL_SCANCODE_UP, 0);
+    }
+    else
+    {
+        pico_key_up(SDL_SCANCODE_UP);
+    }
+
+    if (!gpio_get(DOOM_GPIO_DOWN))
+    {
+        pico_key_down(SDL_SCANCODE_DOWN, 0);
+    }
+    else
+    {
+        pico_key_up(SDL_SCANCODE_DOWN);
+    }
+
+    if (!gpio_get(DOOM_GPIO_LEFT))
+    {
+        pico_key_down(SDL_SCANCODE_LEFT, 0);
+    }
+    else
+    {
+        pico_key_up(SDL_SCANCODE_LEFT);
+    }
+    
+    if (!gpio_get(DOOM_GPIO_RIGHT))
+    {
+        pico_key_down(SDL_SCANCODE_RIGHT, 0);
+    }
+    else
+    {
+        pico_key_up(SDL_SCANCODE_RIGHT);
+    }
+
+    static uint apressed;
+    if (!gpio_get(DOOM_GPIO_A))
+    {
+        if (apressed!=1)
+        {
+            pico_key_down(SDL_SCANCODE_RETURN, 0);
+            pico_key_down(SDL_SCANCODE_SPACE, 0);
+            apressed = 1;
+        }
+    }
+    else
+    {
+        if (apressed == 1)
+        {
+            pico_key_up(SDL_SCANCODE_RETURN);
+            pico_key_up(SDL_SCANCODE_SPACE);
+            apressed = 0;
+        }
+    }
+
+    static uint bpressed;
+    if (!gpio_get(DOOM_GPIO_B))
+    {
+        if (bpressed!=1)
+        {
+            pico_key_down(SDL_SCANCODE_O, 0);
+            bpressed = 1;
+        }
+    }
+    else
+    {
+        if (bpressed == 1)
+        {
+            pico_key_up(SDL_SCANCODE_O);
+            bpressed = 0;
+        }
+    }
+
+    static uint ypressed;
+    if (!gpio_get(DOOM_GPIO_Y))
+    {
+        if (ypressed!=1)
+        {
+            pico_key_down(SDL_SCANCODE_P, 0);
+            ypressed = 1;
+        }
+    }
+    else
+    {
+        if (ypressed == 1)
+        {
+            pico_key_up(SDL_SCANCODE_P);
+            ypressed = 0;
+        }
+    }
+
+    if (!gpio_get(DOOM_GPIO_X))
+    {
+        pico_key_down(SDL_SCANCODE_RCTRL, 0);
+    }
+    else
+    {
+        pico_key_up(SDL_SCANCODE_RCTRL);
+    }
+#endif
+    
 #if PICO_ON_DEVICE && !NO_USE_UART
     if (uart_is_readable(uart_default)) {
         char c = uart_getc(uart_default);
