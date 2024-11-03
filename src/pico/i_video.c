@@ -1029,7 +1029,7 @@ void __not_in_flash_func(fill_scanlines)() {
             } else {
                 mipi_display_write_command(MIPI_DCS_WRITE_MEMORY_CONTINUE);
             }
-            mipi_display_write_data_dma((const uint8_t*)scanline_buffer, SCREENWIDTH*2);
+            mipi_display_write_data_dma((const uint8_t*)scanline_buffer, 240*2);
 
             scanline_ready = 0;
         }
