@@ -391,40 +391,74 @@ void I_GetEvent() {
 
 void I_GetEventTimeout(int key_timeout) {
 #ifdef PIMORONI_PICOSYSTEM
+    static uint uppressed;
     if (!gpio_get(DOOM_GPIO_UP))
     {
-        pico_key_down(SDL_SCANCODE_UP, 0);
+        if (uppressed != 1)
+        {
+            pico_key_down(SDL_SCANCODE_UP, 0);
+            uppressed = 1;
+        }
     }
     else
     {
-        pico_key_up(SDL_SCANCODE_UP);
+        if (uppressed == 1)
+        {
+            pico_key_up(SDL_SCANCODE_UP);
+            uppressed = 0;
+        }
     }
 
+    static uint downpressed;
     if (!gpio_get(DOOM_GPIO_DOWN))
     {
-        pico_key_down(SDL_SCANCODE_DOWN, 0);
+        if (downpressed != 1)
+        {
+            pico_key_down(SDL_SCANCODE_DOWN, 0);
+            downpressed = 1;
+        }
     }
     else
     {
-        pico_key_up(SDL_SCANCODE_DOWN);
+        if (downpressed == 1)
+        {
+            pico_key_down(SDL_SCANCODE_DOWN, 0);
+            downpressed = 0;
+        }
     }
 
-    if (!gpio_get(DOOM_GPIO_LEFT))
-    {
-        pico_key_down(SDL_SCANCODE_LEFT, 0);
+    static uint leftpressed;
+    if (!gpio_get(DOOM_GPIO_LEFT)) {
+        if (leftpressed!=1)
+        {
+            pico_key_down(SDL_SCANCODE_LEFT, 0);
+            leftpressed = 1;
+        }
     }
     else
     {
-        pico_key_up(SDL_SCANCODE_LEFT);
+        if (leftpressed==1)
+        {
+            pico_key_up(SDL_SCANCODE_LEFT);
+            leftpressed = 0;
+        }
     }
     
-    if (!gpio_get(DOOM_GPIO_RIGHT))
-    {
-        pico_key_down(SDL_SCANCODE_RIGHT, 0);
+    static uint rightpressed;
+    if (!gpio_get(DOOM_GPIO_RIGHT)) {
+        if (rightpressed!=1)
+        {
+            pico_key_down(SDL_SCANCODE_RIGHT, 0);
+            rightpressed = 1;
+        }
     }
     else
     {
-        pico_key_up(SDL_SCANCODE_RIGHT);
+        if (rightpressed==1)
+        {
+            pico_key_up(SDL_SCANCODE_RIGHT);
+            rightpressed = 0;
+        }
     }
 
     static uint apressed;
